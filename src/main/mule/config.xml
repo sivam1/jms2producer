@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:spring="http://www.mulesoft.org/schema/mule/spring" xmlns:jms="http://www.mulesoft.org/schema/mule/jms"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.mulesoft.org/schema/mule/spring http://www.mulesoft.org/schema/mule/spring/current/mule-spring.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="9a3f9a7c-9236-4716-9356-6170d12362b5" >
+		<http:listener-connection host="0.0.0.0" port="8088"/>
+	</http:listener-config>
+	
+	<configuration-properties doc:name="Configuration properties" doc:id="79695944-ef41-43b2-8922-613224816d6f" file="config.yaml" />
+ 	<jms:config name="JMS_Config" doc:name="JMS Config" doc:id="a30db756-4d37-4356-88a0-b93077c1252f" >
+		<jms:active-mq-connection connectionFactory="artemisMQConnectionFactory" specification="JMS_2_0"/>
+	</jms:config> 
+ <spring:config name="Spring_Config" doc:name="Spring Config" doc:id="f935e671-c051-45fe-a777-4f854c07a385" files="jms-config.xml" /> 
+	
+ <jms:config name="JMS_2_Config_SSL" doc:name="JMS Config" doc:id="d3cc7855-1069-49ce-854f-8c42cd6950f5" >
+		<jms:active-mq-connection specification="JMS_2_0" username="admin" password="admin">
+			<jms:connection-factory >
+				<jms:jndi-connection-factory connectionFactoryJndiName="ConnectionFactory" lookupDestination="ALWAYS" >
+					<jms:name-resolver-builder jndiInitialContextFactory="#['org.apache.activemq.artemis.jndi.ActiveMQInitialContextFactory']" jndiProviderUrl="${jms2.url}" />
+				</jms:jndi-connection-factory>
+			</jms:connection-factory>
+		</jms:active-mq-connection>
+	</jms:config>
+</mule>

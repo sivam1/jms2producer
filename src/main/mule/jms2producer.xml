@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:jms="http://www.mulesoft.org/schema/mule/jms"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="Simple-Queue-Flow" doc:id="ff0b9308-2b51-47fa-ba79-317ef29caf35" >
+		<http:listener doc:name="http://localhost:8088/simple" doc:id="e3f04097-debf-4a23-8d09-9df10f6e26a6" config-ref="HTTP_Listener_config" path="/simple" allowedMethods="POST"/>
+		<logger level="INFO" doc:name="Logger" doc:id="387ed387-aa3b-47fb-82cf-02dbcb1f366a" message="#['Sending data to simple-queue ']"/>
+		<jms:publish doc:name="Publish to simple-queue" doc:id="5ed82a25-dd6d-4c74-90f4-06473add0dfd" destination="simple-queue" config-ref="JMS_Config_SSL">
+			<jms:message >
+				<jms:body ><![CDATA[#[%dw 2.0
+output application/json
+---
+payload]]]></jms:body>
+			</jms:message>
+		</jms:publish>
+	</flow>
+	
+	<flow name="MultiCast-Flow" doc:id="914d6f52-944e-4f2d-bf31-03393e805aac" >
+		<http:listener doc:name="http://localhost:8088/multi" doc:id="d9502a06-1885-49b1-a356-8e96ada05ccf" config-ref="HTTP_Listener_config" path="/multi" allowedMethods="POST"/>
+		<logger level="INFO" doc:name="Logger" doc:id="a6fb9246-4274-44b4-be24-05763b2be6c4" message="#['Sending data to Employee.Topic']"/>
+		<jms:publish doc:name="Publish to Employee.Topic" doc:id="8362a173-0b61-484a-99d8-3e8c0b5f6df3" destination="Employee.Topic" config-ref="JMS_Config_SSL" destinationType="TOPIC" sendCorrelationId="ALWAYS">
+			<jms:message >
+				<jms:body ><![CDATA[#[%dw 2.0
+output application/json
+---
+payload]]]></jms:body>
+			</jms:message>
+		</jms:publish>
+	</flow>
+	
+	
+	<flow name="JMS-2-DLQ-Delay-delivery-Flow" doc:id="e9443520-9a6f-434c-9b7a-9207724979b5" >
+		<http:listener doc:name="http://localhost:8088/dlq" doc:id="2a840f65-932f-4d99-9f6c-3859a5c7f0b6" config-ref="HTTP_Listener_config" path="/dlq" allowedMethods="POST"/>
+		<logger level="INFO" doc:name="Logger" doc:id="cd6b8f1f-5d39-42c5-924f-ef60541d3633" message="#['Sending data to TerminatedEmployee.DLQ with delay 3 min']"/>
+		<jms:publish doc:name="TerminatedEmployee.DLQ" doc:id="98a96204-1134-4430-ac74-bf0ce37105b0" destination="TerminatedEmployee.DLQ" config-ref="JMS_Config_SSL" sendCorrelationId="ALWAYS" deliveryDelay="3" deliveryDelayUnit="MINUTES">
+			<jms:message >
+				<jms:body ><![CDATA[#[%dw 2.0
+output application/json
+---
+payload]]]></jms:body>
+			</jms:message>
+		</jms:publish>
+	</flow>
+	
+	<flow name="Shared-Flow" doc:id="2a04b115-abdd-4cf0-b811-98903aacb59c" >
+		<http:listener doc:name="http://localhost:8088/sharedq" doc:id="039574e2-f1be-4e53-94da-06627fbea2b7" config-ref="HTTP_Listener_config" path="/sharedq" allowedMethods="POST">
+			<http:response >
+				<http:body ><![CDATA[#[%dw 2.0
+output application/json
+---
+payload]]]></http:body>
+			</http:response>
+		</http:listener>
+		<logger level="INFO" doc:name="Logger" doc:id="e3c2fd3b-fef2-4257-b139-4ba133614bb3" message="#['Sending data to Shared queues']"/>
+		<ee:transform doc:name="Transform Message" doc:id="a323831a-2c38-4a55-91ea-2386b444c5ef" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<foreach doc:name="For Each" doc:id="636e4240-2bd9-4632-92c0-f8983777cf2c" collection="#[payload]">
+			<logger level="INFO" doc:name="Logger" doc:id="121b36d6-33e6-447f-ad5a-dbefb4b3876d" message='#[("Message: " ++ vars.counter  ++ payload.empId)]'/>
+			 <jms:publish doc:name="shared-queue" doc:id="b03a0b15-5993-48eb-8a98-55cedf98dd6a" destination="shared-queue" config-ref="JMS_Config_SSL" sendCorrelationId="ALWAYS" deliveryDelayUnit="MINUTES">
+			<jms:message>
+				<jms:body><![CDATA[#[%dw 2.0
+output application/json
+---
+payload]]]></jms:body>
+			</jms:message> 
+		</jms:publish> 
+		</foreach>
+	</flow>
+	
+</mule>
